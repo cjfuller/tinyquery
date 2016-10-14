@@ -124,31 +124,52 @@ def p_table_expr_table_or_union(p):
         p[0] = tq_ast.TableUnion(p[1])
 
 
-def p_table_expr_join(p):
-    """full_table_expr : aliased_table_expr JOIN aliased_table_expr \
-                            ON expression
-                       | aliased_table_expr JOIN EACH aliased_table_expr \
-                            ON expression
+def p_multi_join_expr(p):
+    """full_table_expr : aliased_table_expr multi_join_tail
     """
-    p[0] = tq_ast.Join(p[1], p[len(p) - 3], p[len(p) - 1], is_left_outer=False)
+    p[0] = tq_ast.MultiJoin(p[1], p[2])
 
 
-def p_table_expr_left_outer_join(p):
-    """full_table_expr : aliased_table_expr LEFT OUTER JOIN \
-                         aliased_table_expr ON expression
-                       | aliased_table_expr LEFT OUTER JOIN EACH \
-                         aliased_table_expr ON expression
-                       | aliased_table_expr LEFT JOIN \
-                         aliased_table_expr ON expression
-                       | aliased_table_expr LEFT JOIN EACH \
-                         aliased_table_expr ON expression
+def p_non_outer_join(p):
+    """non_outer_join : LEFT OUTER JOIN
+                      | LEFT OUTER JOIN EACH
+                      | LEFT JOIN
+                      | LEFT JOIN EACH
+                      | JOIN
+                      | JOIN EACH
     """
-    p[0] = tq_ast.Join(p[1], p[len(p) - 3], p[len(p) - 1], is_left_outer=True)
+    if p[1] == 'LEFT':
+        p[0] = tq_ast.MultiJoin.JoinType.LEFT_OUTER
+    else:
+        p[0] = tq_ast.MultiJoin.JoinType.INNER
 
 
-def p_table_expr_cross_join(p):
-    """full_table_expr : aliased_table_expr CROSS JOIN aliased_table_expr"""
-    p[0] = tq_ast.CrossJoin(p[1], p[4])
+def p_cross_join(p):
+    """cross_join : CROSS JOIN
+                  | CROSS JOIN EACH
+    """
+    p[0] = tq_ast.MultiJoin.JoinType.CROSS
+
+
+def p_partial_join_expr(p):
+    """partial_join_expr : non_outer_join aliased_table_expr ON expression
+                         | cross_join aliased_table_expr
+    """
+    if p[1] is tq_ast.MultiJoin.JoinType.CROSS:
+        return (p[2], p[1], None)
+    else:
+        return (p[2], p[1], p[4])
+
+
+def p_multi_join_tail(p):
+    """multi_join_tail : partial_join_expr
+                       | partial_join_expr multi_join_tail
+    """
+    if len(p) == 2:
+        # Single partial join expression
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[2]
 
 
 def p_aliased_table_expr_list(p):

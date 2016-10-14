@@ -114,29 +114,39 @@ class TableUnion(collections.namedtuple('TableUnion', ['tables'])):
         return ', '.join(str(table) for table in self.tables)
 
 
-class Join(collections.namedtuple('Join', ['table1', 'table2', 'condition',
-                                           'is_left_outer'])):
-    """Table expression for a join of two tables.
+class MultiJoin(collections.namedtuple('MutliJoin', ['table1', 'others'])):
+    """A join between two or more tables.
 
-    Joining more than two tables currently isn't supported.
+    `others` is a list, each element of which is a triple:
+    (table expression, join type, condition), defined as for the other joins,
+    except for `join type`, which is an instance of MultiJoin.JoinType
+
+    TODO(colin): implement evaluation of multi-joins.  For now these are
+    parser-only.
     """
+    class JoinType(object):
+        def __init__(self, join_type):
+            self.join_type = join_type
+
+        def __str__(self):
+            return self.join_type
+
+    # almost like an enum for join types.
+    JoinType.LEFT_OUTER = JoinType('LEFT OUTER')
+    JoinType.INNER = JoinType('INNER')
+    JoinType.CROSS = JoinType('CROSS')
+
+    def __no_instances(*args, **kwargs):
+        raise NotImplementedError("Cannot create new join types")
+
+    JoinType.__new__ = classmethod(__no_instances)
+
     def __str__(self):
-        if self.is_left_outer:
-            return '{} LEFT OUTER JOIN {} ON {}'.format(
-                self.table1, self.table2, self.condition)
-        else:
-            return '{} JOIN {} ON {}'.format(
-                self.table1, self.table2, self.condition)
-
-
-class CrossJoin(collections.namedtuple('CrossJoin', ['table1', 'table2'])):
-    """Table expression for a cross join of two tables.
-
-    This needs to be parsed separately instead of joining on true since there's
-    no way to write a regular JOIN that behaves as a CROSS JOIN.
-    """
-    def __str__(self):
-        return '{} CROSS JOIN {}'.format(self.table1, self.table2)
+        return '{} '.format(self.table1) + ' '.join(
+            '{} JOIN {}{}'.format(join_type, table_expr,
+                                  (condition and ' ON {}'.format(condition))
+                                  or '')
+            for table_expr, join_type, condition in self.others)
 
 
 class CaseClause(collections.namedtuple('CaseClause',
