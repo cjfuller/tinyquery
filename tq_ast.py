@@ -139,6 +139,43 @@ class CrossJoin(collections.namedtuple('CrossJoin', ['table1', 'table2'])):
         return '{} CROSS JOIN {}'.format(self.table1, self.table2)
 
 
+class MultiJoin(collections.namedtuple('MutliJoin', ['table1', 'others'])):
+    """A join between two or more tables.
+
+    `others` is a list, each element of which is a triple:
+    (table expression, join type, condition), defined as for the other joins,
+    except for `join type`, which is an instance of MultiJoin.JoinType
+
+    TODO(colin): implement evaluation of multi-joins.  For now these are
+    parser-only.
+    TODO(colin): reimplement the other join types in terms of mutli-joins once
+    evaluation is supported.
+    """
+    class JoinType(object):
+        def __init__(self, join_type):
+            self.join_type = join_type
+
+        def __str__(self):
+            return self.join_type
+
+    JoinType.LEFT_OUTER = JoinType('LEFT OUTER')
+    JoinType.INNER = JoinType('INNER')
+    JoinType.CROSS = JoinType('CROSS')
+
+    # Make it impossible to instantiate new JoinTypes.
+    def __no_instances(*args, **kwargs):
+        raise NotImplementedError("Cannot create new join types")
+
+    JoinType.__new__ = classmethod(__no_instances)
+
+    def __str__(self):
+        return '{} '.format(self.table1) + ' '.join(
+            '{} JOIN {}{}'.format(join_type, table_expr,
+                                  (condition and ' ON {}'.format(condition))
+                                  or '')
+            for table_expr, join_type, condition in self.others)
+
+
 class CaseClause(collections.namedtuple('CaseClause',
                                         ['condition', 'result_expr'])):
     """Expression for a single clause from a CASE / WHEN / END statement.
