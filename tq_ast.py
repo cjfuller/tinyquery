@@ -164,3 +164,10 @@ class CaseExpression(collections.namedtuple('CaseExpression', ['clauses'])):
     def __str__(self):
         return 'CASE {} END'.format(
             ' '.join(str(clause) for clause in self.clauses))
+
+
+class RecordScopedAggregation(
+        collections.namedtuple('RecordScopedAggregation', ['expr'])):
+    """`x WITHIN RECORD` scoped aggregation."""
+    def __str__(self):
+        return '{} WITHIN RECORD'.format(self.expr)

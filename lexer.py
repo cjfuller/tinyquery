@@ -38,6 +38,8 @@ reserved_words = {
     'else': 'ELSE',
     'end': 'END',
     'contains': 'CONTAINS',
+    'within': 'WITHIN',
+    'record': 'RECORD',
 }
 
 tokens = [

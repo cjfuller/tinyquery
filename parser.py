@@ -316,6 +316,14 @@ def p_expression_count_star(p):
     p[0] = tq_ast.FunctionCall('count', [tq_ast.Literal(1)])
 
 
+def p_record_scoped_aggregation(p):
+    """expression : expression WITHIN RECORD"""
+    # TODO(colin): this is too permissive a definition; we want to allow only
+    # aggregation operations for the leading expression (and at least not
+    # allow arbitrary chaining of WITHIN RECORD)
+    p[0] = tq_ast.RecordScopedAggregation(p[1])
+
+
 def p_parenthesized_star(p):
     """parenthesized_star : STAR
                           | LPAREN parenthesized_star RPAREN"""
