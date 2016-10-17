@@ -156,9 +156,9 @@ def p_partial_join_expr(p):
                          | cross_join aliased_table_expr
     """
     if p[1] is tq_ast.MultiJoin.JoinType.CROSS:
-        return (p[2], p[1], None)
+        p[0] = (p[2], p[1], None)
     else:
-        return (p[2], p[1], p[4])
+        p[0] = (p[2], p[1], p[4])
 
 
 def p_multi_join_tail(p):
